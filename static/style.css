@@ -1,0 +1,380 @@
+/* CollabBoard Stylesheet */
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Tool Button states */
+.tool-btn.active {
+  background-color: rgb(79 70 229 / 0.25);
+  color: rgb(129 140 248);
+  border: 1px solid rgb(99 102 241 / 0.4);
+}
+
+.tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Size buttons */
+.size-btn.active {
+  background-color: rgb(79 70 229 / 0.3);
+  color: rgb(165 180 252);
+}
+
+/* Canvas cursors */
+.cursor-pen {
+  cursor: crosshair;
+}
+.cursor-pan {
+  cursor: grab;
+}
+.cursor-pan:active {
+  cursor: grabbing;
+}
+.cursor-eraser {
+  cursor: cell;
+}
+
+/* Remote Cursor Styling */
+.remote-cursor {
+  position: absolute;
+  pointer-events: none;
+  transition: transform 0.08s linear;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.remote-cursor-icon {
+  width: 18px;
+  height: 18px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.remote-cursor-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  color: white;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  margin-top: 2px;
+  margin-left: 10px;
+}
+
+/* Sticky notes */
+.sticky-note-element {
+  position: absolute;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+  min-width: 90px;
+  min-height: 70px;
+  pointer-events: auto;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+  overflow: hidden;
+  user-select: text;
+}
+
+.sticky-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  border-right: 3px solid rgba(0, 0, 0, 0.35);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.35);
+  border-bottom-right-radius: 8px;
+  pointer-events: auto;
+  z-index: 10;
+  transition: border-color 0.15s;
+}
+
+.sticky-resize-handle:hover {
+  border-color: #6366f1;
+}
+
+.sticky-note-element.selected {
+  box-shadow: 0 0 0 2px #6366f1, 0 12px 28px -5px rgba(0, 0, 0, 0.6);
+}
+
+.sticky-header {
+  height: 26px;
+  background-color: rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  cursor: move;
+  user-select: none;
+}
+
+.sticky-delete-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 1;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sticky-delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+.sticky-body {
+  flex: 1;
+  padding: 8px 10px;
+  outline: none;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cursor-select {
+  cursor: default;
+}
+
+/* Scrollable Left Toolbar */
+#toolbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.45) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+#toolbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+#toolbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#toolbar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.45);
+  border-radius: 9999px;
+}
+
+#toolbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.85);
+}
+
+/* Collapsed Toolbar State */
+#toolbar.collapsed {
+  transform: translateX(-120%);
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+/* Sliding Properties Dock */
+#properties-dock {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate(-50%, 0);
+  /* ensure bottom-0 anchor works right */
+  will-change: transform;
+}
+
+#properties-dock.collapsed {
+  transform: translate(-50%, calc(100% - 32px));
+}
+
+#properties-dock.collapsed #properties-tab-icon {
+  transform: rotate(180deg);
+}
+
+#properties-dock.collapsed #properties-bar {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Sliding Slide Dock */
+#slide-dock {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(0);
+  will-change: transform;
+}
+
+#slide-dock.collapsed {
+  transform: translateY(calc(100% - 28px));
+}
+
+#slide-dock.collapsed #slide-tab-icon {
+  transform: rotate(180deg);
+}
+
+#slide-dock.collapsed #slide-controls {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Horizontal scroll for properties bar */
+#properties-bar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#properties-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==============================================
+   RESPONSIVE & MOBILE / DESKTOP VIEW MODES
+   ============================================== */
+
+/* Base transitions for smooth switching */
+#toolbar-wrapper, #properties-bar, header {
+  transition: all 0.25s ease-in-out;
+}
+
+/* ---- Mobile Mode (explicit class on body) ---- */
+body.mobile-mode header {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+body.mobile-mode #room-badge-container {
+  display: none;
+}
+
+body.mobile-mode #zoom-level {
+  display: none;
+}
+
+body.mobile-mode #toolbar-wrapper {
+  left: 0.35rem;
+}
+
+body.mobile-mode #toolbar {
+  padding: 0.35rem;
+  max-height: calc(100vh - 7rem);
+  border-radius: 1rem;
+}
+
+body.mobile-mode .tool-btn,
+body.mobile-mode #btn-insert-image,
+body.mobile-mode #btn-clear-board {
+  padding: 0.45rem;
+}
+
+body.mobile-mode #properties-bar {
+  padding: 0.35rem 0.65rem;
+  border-radius: 1rem;
+  max-width: calc(100vw - 1rem);
+}
+
+body.mobile-mode .color-swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+body.mobile-mode #slide-dock {
+  left: 0.5rem;
+}
+
+/* ---- Small Screen without explicit desktop-mode ---- */
+@media (max-width: 768px) {
+  body:not(.desktop-mode) header {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  body:not(.desktop-mode) #room-badge-container {
+    display: none;
+  }
+
+  body:not(.desktop-mode) #zoom-level {
+    display: none;
+  }
+
+  body:not(.desktop-mode) #toolbar-wrapper {
+    left: 0.35rem;
+  }
+
+  body:not(.desktop-mode) #toolbar {
+    padding: 0.35rem;
+    max-height: calc(100vh - 7rem);
+    border-radius: 1rem;
+  }
+
+  body:not(.desktop-mode) .tool-btn,
+  body:not(.desktop-mode) #btn-insert-image,
+  body:not(.desktop-mode) #btn-clear-board {
+    padding: 0.45rem;
+  }
+
+  body:not(.desktop-mode) #properties-bar {
+    padding: 0.35rem 0.65rem;
+    border-radius: 1rem;
+    max-width: calc(100vw - 1rem);
+  }
+
+  body:not(.desktop-mode) .color-swatch {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  body:not(.desktop-mode) #slide-dock {
+    left: 0.5rem;
+  }
+}
+
+/* In Desktop Mode (explicit override) */
+body.desktop-mode #toolbar-wrapper {
+  left: 0.75rem;
+}
+
+body.desktop-mode #room-badge-container {
+  display: flex !important;
+}
+
+body.desktop-mode #zoom-level {
+  display: inline-block !important;
+}
+
+/* Toast alert */
+.toast-item {
+  animation: slideInRight 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

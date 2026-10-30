@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CollabBoard - Papan Tulis Kolaboratif Online</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- PDF.js CDN for PDF Annotation & Import -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="h-14 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 flex items-center justify-between z-30 shrink-0">
+    <!-- Left: App Brand & Room Badge -->
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+          <i data-lucide="edit-3" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">CollabBoard</span>
+      </div>
+
+      <div class="h-5 w-px bg-slate-700 mx-1"></div>
+
+      <!-- Room Badge & Switcher -->
+      <div id="room-badge-container" class="flex items-center space-x-2 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60 text-xs">
+        <span class="text-slate-400">Ruang:</span>
+        <span id="room-code-display" class="font-mono font-semibold text-indigo-300">...</span>
+        <button id="btn-copy-code" title="Salin Kode Ruang" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- Role Indicator Badge -->
+      <div id="role-badge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="role-text">Editor</span>
+      </div>
+    </div>
+
+    <!-- Center: Undo/Redo & Zoom Controls -->
+    <div id="header-zoom-controls" class="flex items-center space-x-1 bg-slate-800/70 p-1 rounded-lg border border-slate-700/60 text-slate-300">
+      <button id="btn-undo" title="Urungkan (Ctrl+Z)" class="p-1.5 rounded hover:bg-slate-700 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition">
+        <i data-lucide="undo" class="w-4 h-4"></i>
+      </button>
+      <button id="btn-redo" title="Ulangi (Ctrl+Y)" class="p-1.5 rounded hover:bg-slate-700 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition">
+        <i data-lucide="redo" class="w-4 h-4"></i>
+      </button>
+      <div class="h-4 w-px bg-slate-700 mx-1"></div>
+      <button id="btn-zoom-out" title="Perkecil" class="p-1.5 rounded hover:bg-slate-700 hover:text-white transition">
+        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+      </button>
+      <span id="zoom-level" class="text-xs font-mono px-1 min-w-[42px] text-center">100%</span>
+      <button id="btn-zoom-in" title="Perbesar" class="p-1.5 rounded hover:bg-slate-700 hover:text-white transition">
+        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+      </button>
+      <button id="btn-zoom-reset" title="Reset Zoom" class="p-1.5 rounded hover:bg-slate-700 hover:text-white transition">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Right: View Mode Toggle, Background Settings, Online Users, Share Button -->
+    <div class="flex items-center space-x-2">
+      <!-- Layout View Mode Switcher (Desktop / Mobile) -->
+      <button id="btn-view-mode" title="Beralih Tampilan Desktop / Mobile" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg transition text-slate-300 font-medium">
+        <i id="view-mode-icon" data-lucide="monitor" class="w-4 h-4 text-indigo-400"></i>
+        <span id="view-mode-text" class="hidden sm:inline">Desktop</span>
+      </button>
+      <!-- Background Options Button -->
+      <button id="btn-bg-modal" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium">
+        <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-400"></i>
+        <span>Background</span>
+      </button>
+
+      <!-- User Profile Button (Set Display Name & Color) -->
+      <button id="btn-user-profile" title="Atur Nama & Profil Anda" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium text-slate-200">
+        <span id="header-user-avatar" class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block border border-white/60"></span>
+        <span id="header-user-name" class="max-w-[70px] sm:max-w-[110px] truncate">Saya</span>
+        <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+      </button>
+
+      <!-- Active Users List / Permission Manager Trigger -->
+      <button id="btn-users-modal" title="Daftar Peserta & Kelola Izin" class="flex items-center space-x-1 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/80 px-2 py-1 rounded-lg transition">
+        <div id="users-container" class="flex items-center -space-x-2 overflow-hidden">
+          <!-- User avatar circles injected here -->
+        </div>
+        <span id="users-badge-count" class="text-[11px] font-semibold text-slate-300 ml-1">1</span>
+      </button>
+
+      <!-- In-Room Chat Toggle -->
+      <button id="btn-chat-toggle" title="Obrolan Ruang" class="relative p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 transition">
+        <i data-lucide="message-square" class="w-4 h-4"></i>
+        <span id="chat-badge" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500"></span>
+      </button>
+
+      <!-- Export Button -->
+      <button id="btn-export" title="Simpan sebagai Gambar (PNG)" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 transition">
+        <i data-lucide="download" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Share / Invite Button -->
+      <button id="btn-share" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold shadow-md shadow-indigo-600/30 transition">
+        <i data-lucide="user-plus" class="w-4 h-4"></i>
+        <span>Undang</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CANVAS WORKSPACE -->
+  <div class="relative flex-1 w-full h-full overflow-hidden bg-slate-900 select-none">
+
+    <!-- FLOATING TOOLBAR WRAPPER (Left Scrollable Drawing Tools) -->
+    <div id="toolbar-wrapper" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center">
+      <aside id="toolbar" class="bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 shadow-2xl flex flex-col items-center space-y-1.5 max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden transition-all duration-300">
+        
+        <!-- Selection / Hand Pan Tool -->
+        <button data-tool="select" title="Pilih & Pindah (V)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="mouse-pointer" class="w-5 h-5"></i>
+        </button>
+        <button data-tool="pan" title="Geser Papan (H / Spasi)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="hand" class="w-5 h-5"></i>
+        </button>
+
+        <div class="w-7 h-px bg-slate-800 my-1"></div>
+
+        <!-- Pen Tool -->
+        <button data-tool="pen" title="Pena / Gambar Bebas (P)" class="tool-btn active p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="pen-tool" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Highlighter Tool -->
+        <button data-tool="highlighter" title="Stabilo / Highlighter" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="highlighter" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Shapes Dropdown / Direct Tools -->
+        <button data-tool="line" title="Garis Lurus (L)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="minus" class="w-5 h-5"></i>
+        </button>
+
+        <button data-tool="arrow" title="Panah (A)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+        </button>
+
+        <button data-tool="rect" title="Persegi / Kotak (R)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="square" class="w-5 h-5"></i>
+        </button>
+
+        <button data-tool="circle" title="Lingkaran / Elips (O)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="circle" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Text Tool -->
+        <button data-tool="text" title="Teks (T)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="type" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Sticky Note -->
+        <button data-tool="sticky" title="Catatan Tempel (Sticky Note)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="sticky-note" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Insert Image Button -->
+        <button id="btn-insert-image" title="Sisipkan Gambar (I / Paste Ctrl+V)" class="p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="image" class="w-5 h-5"></i>
+        </button>
+        <input type="file" id="canvas-image-input" accept="image/*" class="hidden">
+
+        <!-- Insert PDF Button -->
+        <button id="btn-insert-pdf" title="Sisipkan Dokumen PDF (PDF)" class="p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition">
+          <i data-lucide="file-text" class="w-5 h-5"></i>
+        </button>
+        <input type="file" id="canvas-pdf-input" accept="application/pdf" class="hidden">
+
+        <div class="w-7 h-px bg-slate-800 my-1"></div>
+
+        <!-- Eraser Tool -->
+        <button data-tool="eraser" title="Penghapus (E)" class="tool-btn p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i data-lucide="eraser" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Clear All -->
+        <button id="btn-clear-board" title="Bersihkan Seluruh Papan" class="p-2.5 rounded-xl hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Clear Text Only -->
+        <button id="btn-clear-text" title="Hapus Semua Teks (Gambar &amp; PDF tetap aman)" class="p-2.5 rounded-xl hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 transition">
+          <i data-lucide="type" class="w-5 h-5"></i>
+        </button>
+      </aside>
+
+      <!-- Mini Collapse / Expand Toggle Button for Mobile -->
+      <button id="btn-toggle-toolbar" title="Sembunyikan / Tampilkan Toolbar" class="ml-1 w-5 h-12 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white rounded-r-lg border border-l-0 border-slate-700 flex items-center justify-center transition shadow-md">
+        <i id="toolbar-toggle-icon" data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+
+    <!-- FLOATING SELECTION ACTIONS (Delete, Duplicate, Resize) -->
+    <div id="selection-actions-bar" class="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md border border-indigo-500/50 rounded-2xl px-4 py-2 shadow-2xl items-center space-x-2.5 z-20 animate-scale-in" style="display:none">
+      <span class="text-xs font-semibold text-indigo-300 flex items-center space-x-1">
+        <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+        <span>Objek</span>
+      </span>
+      <div class="h-4 w-px bg-slate-700"></div>
+      <button id="btn-decrease-size" title="Kecilkan Ukuran" class="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2 py-1 rounded-lg transition font-medium">
+        <i data-lucide="minus" class="w-3 h-3"></i>
+        <span>Kecilkan</span>
+      </button>
+      <button id="btn-increase-size" title="Besarkan Ukuran" class="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2 py-1 rounded-lg transition font-medium">
+        <i data-lucide="plus" class="w-3 h-3"></i>
+        <span>Besarkan</span>
+      </button>
+      <div class="h-4 w-px bg-slate-700"></div>
+      <button id="btn-delete-selected" title="Hapus Objek Terpilih (Delete / Backspace)" class="flex items-center space-x-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs px-2.5 py-1 rounded-lg transition font-medium">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        <span>Hapus</span>
+      </button>
+      <button id="btn-duplicate-selected" title="Duplikat Objek" class="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded-lg transition">
+        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+        <span>Duplikat</span>
+      </button>
+    </div>
+
+    <!-- SLIDING PROPERTIES DOCK (Color, Width, Fill) -->
+    <div id="properties-dock" class="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none transition-transform duration-300 ease-in-out">
+      
+      <!-- Slide Toggle Tab Handle -->
+      <button id="btn-toggle-properties" title="Tampilkan / Sembunyikan Palet Warna" class="pointer-events-auto bg-slate-900/95 hover:bg-slate-800 text-slate-300 hover:text-indigo-300 border border-b-0 border-slate-700/80 px-3.5 py-1 rounded-t-xl text-[11px] font-semibold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all cursor-pointer">
+        <i data-lucide="palette" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span id="properties-tab-text">Alat Warna & Kuas</span>
+        <i id="properties-tab-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 ml-0.5 transition-transform duration-300"></i>
+      </button>
+
+      <!-- Main Properties Bar -->
+      <div id="properties-bar" class="pointer-events-auto bg-slate-900/95 backdrop-blur-md border border-t-0 border-slate-700/80 rounded-b-2xl px-4 py-2.5 shadow-2xl flex items-center space-x-3.5 max-w-[calc(100vw-1.5rem)] overflow-x-auto select-none transition-all">
+        
+        <!-- Color Palette -->
+        <div class="flex items-center space-x-1.5 shrink-0" id="color-palette">
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-white ring-2 ring-indigo-500 bg-white" data-color="#ffffff"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-slate-900" data-color="#0f172a"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-red-500" data-color="#ef4444"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-amber-500" data-color="#f59e0b"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-emerald-500" data-color="#10b981"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-sky-500" data-color="#0ea5e9"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-indigo-500" data-color="#6366f1"></button>
+          <button class="color-swatch w-6 h-6 rounded-full border-2 border-transparent bg-pink-500" data-color="#ec4899"></button>
+          
+          <!-- Custom Color Input -->
+          <label class="w-6 h-6 rounded-full border border-slate-600 cursor-pointer overflow-hidden relative flex items-center justify-center bg-gradient-to-tr from-indigo-500 via-rose-500 to-amber-400" title="Warna Kustom">
+            <input type="color" id="custom-color-picker" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" value="#6366f1">
+          </label>
+        </div>
+
+        <div class="h-5 w-px bg-slate-700"></div>
+
+        <!-- Stroke Width Controls -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-400">Ketebalan:</span>
+          <div class="flex items-center space-x-1">
+            <button data-size="2" class="size-btn p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white">
+              <span class="block w-1.5 h-1.5 rounded-full bg-current mx-auto"></span>
+            </button>
+            <button data-size="4" class="size-btn active p-1.5 rounded hover:bg-slate-800 text-indigo-400">
+              <span class="block w-2.5 h-2.5 rounded-full bg-current mx-auto"></span>
+            </button>
+            <button data-size="8" class="size-btn p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white">
+              <span class="block w-3.5 h-3.5 rounded-full bg-current mx-auto"></span>
+            </button>
+            <button data-size="16" class="size-btn p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white">
+              <span class="block w-4.5 h-4.5 rounded-full bg-current mx-auto"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fill Option for Shapes -->
+        <div id="fill-control" class="flex items-center space-x-2 pl-1 border-l border-slate-700">
+          <label class="flex items-center space-x-1.5 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="check-fill-shape" class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+            <span>Isi Warna</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDING SLIDE CONTROLS (Slide Navigation: Prev, Next, Add, Delete) -->
+    <div id="slide-dock" class="absolute bottom-0 left-4 z-20 flex flex-col items-start pointer-events-none transition-transform duration-300 ease-in-out">
+      <!-- Toggle Tab Handle -->
+      <button id="btn-toggle-slide-dock" title="Buka / Tutup Panel Slide" class="pointer-events-auto bg-slate-900/95 hover:bg-slate-800 text-slate-300 hover:text-indigo-300 border border-b-0 border-slate-700/80 px-3 py-1 rounded-t-xl text-[11px] font-semibold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all cursor-pointer">
+        <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span>Slide <span id="tab-current-slide-num">1</span>/<span id="tab-total-slides-num">1</span></span>
+        <i id="slide-tab-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 ml-0.5 transition-transform duration-300"></i>
+      </button>
+
+      <!-- Main Slide Bar -->
+      <div id="slide-controls" class="pointer-events-auto bg-slate-900/95 backdrop-blur-md border border-t-0 border-slate-700/80 rounded-b-2xl rounded-tr-2xl px-3 py-2 shadow-2xl flex items-center space-x-2 select-none text-xs transition-all">
+        <button id="btn-prev-slide" title="Slide Sebelumnya (PageUp / [ )" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <div class="flex items-center space-x-1 font-mono font-semibold text-slate-200 px-1">
+          <span class="text-indigo-400">Slide</span>
+          <span id="current-slide-num">1</span>
+          <span class="text-slate-500">/</span>
+          <span id="total-slides-num">1</span>
+        </div>
+        <button id="btn-next-slide" title="Slide Berikutnya (PageDown / ] )" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+        <div class="h-4 w-px bg-slate-700"></div>
+        <button id="btn-add-slide" title="Tambah Slide Baru (+)" class="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg transition font-medium">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Slide Baru</span>
+        </button>
+        <button id="btn-delete-slide" title="Hapus Slide Ini" class="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-30 disabled:pointer-events-none transition">
+          <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- READ-ONLY BANNER (for Viewers) -->
+    <div id="readonly-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-amber-500/90 text-slate-900 px-4 py-1.5 rounded-full shadow-lg font-semibold text-xs flex items-center space-x-2 z-20">
+      <i data-lucide="eye" class="w-4 h-4"></i>
+      <span>Anda berada dalam Mode Lihat Saja (Read-Only). Minta izin edit kepada host untuk menggambar.</span>
+    </div>
+
+    <!-- CANVAS LAYERS -->
+    <div id="canvas-container" class="w-full h-full relative cursor-crosshair overflow-hidden">
+      <!-- Background Canvas (Grid, Colors, Patterns) -->
+      <canvas id="bg-canvas" class="absolute inset-0 z-0 pointer-events-none"></canvas>
+      
+      <!-- Main Interactive Drawing Canvas -->
+      <canvas id="draw-canvas" class="absolute inset-0 z-10"></canvas>
+      
+      <!-- Remote Cursors Overlay Container -->
+      <div id="cursors-overlay" class="absolute inset-0 pointer-events-none" style="z-index:15"></div>
+      
+      <!-- Sticky notes / Text overlay container -->
+      <div id="elements-overlay" class="absolute inset-0 pointer-events-none" style="z-index:12"></div>
+    </div>
+
+    <!-- SIDE CHAT DRAWER -->
+    <aside id="chat-drawer" class="hidden absolute top-0 right-0 bottom-0 w-80 bg-slate-900/95 backdrop-blur-md border-l border-slate-800 flex-col shadow-2xl transition-all" style="z-index:25">
+      <div class="h-14 border-b border-slate-800 px-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="messages-square" class="w-5 h-5 text-indigo-400"></i>
+          <span class="font-semibold text-sm">Obrolan Ruang</span>
+        </div>
+        <button id="btn-close-chat" class="p-1 text-slate-400 hover:text-white rounded">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <!-- Messages List -->
+      <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
+        <div class="text-slate-500 text-center text-xs py-2">Mulai diskusi atau koordinasi papan tulis di sini.</div>
+      </div>
+      <!-- Message Input -->
+      <form id="chat-form" class="p-3 border-t border-slate-800 flex items-center space-x-2">
+        <input type="text" id="chat-input" placeholder="Ketik pesan..." maxlength="300" class="flex-1 bg-slate-800 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 text-white">
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition">
+          <i data-lucide="send" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </aside>
+
+  </div>
+
+  <!-- MODAL: BACKGROUND SETTINGS -->
+  <div id="modal-background" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="palette" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="font-bold text-base text-white">Pengaturan Background</h3>
+        </div>
+        <button id="btn-close-bg-modal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-sm">
+        <!-- Preset Canvas Themes -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-2">Tema & Warna Papan</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="bg-preset-btn p-3 rounded-xl border border-slate-700 flex flex-col items-center space-y-1 hover:border-indigo-500 transition" data-color="#1e293b" data-patcolor="#334155">
+              <span class="w-6 h-6 rounded-lg bg-[#1e293b] border border-slate-600"></span>
+              <span class="text-xs text-slate-300 font-medium">Dark Slate</span>
+            </button>
+            <button class="bg-preset-btn p-3 rounded-xl border border-slate-700 flex flex-col items-center space-y-1 hover:border-indigo-500 transition" data-color="#ffffff" data-patcolor="#cbd5e1">
+              <span class="w-6 h-6 rounded-lg bg-white border border-slate-300"></span>
+              <span class="text-xs text-slate-300 font-medium">Whiteboard</span>
+            </button>
+            <button class="bg-preset-btn p-3 rounded-xl border border-slate-700 flex flex-col items-center space-y-1 hover:border-indigo-500 transition" data-color="#14532d" data-patcolor="#15803d">
+              <span class="w-6 h-6 rounded-lg bg-[#14532d] border border-green-700"></span>
+              <span class="text-xs text-slate-300 font-medium">Chalkboard</span>
+            </button>
+            <button class="bg-preset-btn p-3 rounded-xl border border-slate-700 flex flex-col items-center space-y-1 hover:border-indigo-500 transition" data-color="#0f172a" data-patcolor="#1e293b">
+              <span class="w-6 h-6 rounded-lg bg-[#0f172a] border border-slate-800"></span>
+              <span class="text-xs text-slate-300 font-medium">Midnight</span>
+            </button>
+            <button class="bg-preset-btn p-3 rounded-xl border border-slate-700 flex flex-col items-center space-y-1 hover:border-indigo-500 transition" data-color="#fefae0" data-patcolor="#e9d8a6">
+              <span class="w-6 h-6 rounded-lg bg-[#fefae0] border border-amber-200"></span>
+              <span class="text-xs text-slate-300 font-medium">Warm Cream</span>
+            </button>
+            <button class="bg-preset-btn p-3 rounded-xl border border-slate-700 flex flex-col items-center space-y-1 hover:border-indigo-500 transition" data-color="#1e1b4b" data-patcolor="#312e81">
+              <span class="w-6 h-6 rounded-lg bg-[#1e1b4b] border border-indigo-900"></span>
+              <span class="text-xs text-slate-300 font-medium">Blueprint</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pattern / Grid Style -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-2">Pola / Grid</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button data-pattern="solid" class="pattern-btn p-2 rounded-lg border border-slate-700 text-center hover:border-indigo-500 text-xs font-medium">Polos</button>
+            <button data-pattern="grid" class="pattern-btn active p-2 rounded-lg border border-indigo-500 bg-indigo-500/10 text-center text-xs font-medium">Kotak / Grid</button>
+            <button data-pattern="dots" class="pattern-btn p-2 rounded-lg border border-slate-700 text-center hover:border-indigo-500 text-xs font-medium">Titik / Dots</button>
+            <button data-pattern="lined" class="pattern-btn p-2 rounded-lg border border-slate-700 text-center hover:border-indigo-500 text-xs font-medium">Bergaris</button>
+          </div>
+        </div>
+
+        <!-- Custom Image Background -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Unggah Gambar Latar (Opsional)</label>
+          <p class="text-xs text-slate-500 mb-2">Gunakan diagram, template catatan, atau gambar sendiri sebagai dasar whiteboard.</p>
+          <div class="flex items-center space-x-2">
+            <label class="flex-1 flex items-center justify-center border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-3 cursor-pointer text-xs text-slate-400 hover:text-white transition">
+              <i data-lucide="image-plus" class="w-4 h-4 mr-2"></i>
+              <span id="bg-file-label">Pilih Gambar...</span>
+              <input type="file" id="bg-file-input" accept="image/*" class="hidden">
+            </label>
+            <button id="btn-remove-bg-image" class="hidden px-3 py-3 text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-xl transition">Hapus</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-950/50 border-t border-slate-800 flex justify-end">
+        <button id="btn-apply-bg" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-4 py-2 rounded-lg transition shadow-md shadow-indigo-600/30">
+          Simpan & Terapkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INVITE & SHARE COLLABORATION -->
+  <div id="modal-share" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-in">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="share-2" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="font-bold text-base text-white">Undang Teman & Kolaborator</h3>
+        </div>
+        <button id="btn-close-share-modal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-sm">
+        <div class="flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs">
+          <i data-lucide="shield-check" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+          <span>Tautan dilindungi enkripsi kriptografis (AES Fernet). Peserta Viewer tidak dapat mengubah link menjadi Editor secara manual.</span>
+        </div>
+
+        <!-- Edit Link (Can Edit) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-400 flex items-center space-x-1.5">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              <span>Tautan Editor (Terenkripsi)</span>
+            </span>
+            <span class="text-[11px] text-slate-500">Akses penuh: gambar & ubah background</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="text" id="share-link-edit" readonly class="flex-1 bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none truncate">
+            <button id="btn-copy-edit-link" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-medium transition flex items-center space-x-1 shrink-0">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Salin</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- View-Only Link (Can View) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-sky-400 flex items-center space-x-1.5">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              <span>Tautan Viewer / Lihat Saja (Terenkripsi)</span>
+            </span>
+            <span class="text-[11px] text-slate-500">Hanya melihat tampilan live</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="text" id="share-link-view" readonly class="flex-1 bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none truncate">
+            <button id="btn-copy-view-link" class="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-2 rounded-lg text-xs font-medium transition flex items-center space-x-1 shrink-0">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Salin</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Direct Room Code & LAN note -->
+        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+          <div class="font-medium text-slate-300">Tips Kolaborasi:</div>
+          <p>• Jika berada di jaringan WiFi yang sama, Anda dapat mengganti <code class="text-indigo-300">localhost</code> dengan alamat IP lokal komputer Anda (contoh: <code class="text-indigo-300">http://192.168.1.X:8000</code>).</p>
+          <p>• Untuk kolaborasi publik melalui internet, Anda juga dapat menggunakan tunnel seperti <code class="text-indigo-300">ngrok</code> atau <code class="text-indigo-300">cloudflared</code>.</p>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-950/50 border-t border-slate-800 flex justify-end">
+        <button id="btn-close-share-modal-bottom" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs px-4 py-2 rounded-lg transition">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KELOLA PESERTA, PROFIL & IZIN RUANGAN -->
+  <div id="modal-users-permissions" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="font-bold text-base text-white">Peserta & Izin Ruangan</h3>
+        </div>
+        <button id="btn-close-users-modal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-sm max-h-[75vh] overflow-y-auto">
+        <!-- Profil & Nama Anda -->
+        <div class="p-4 bg-slate-800/60 rounded-xl border border-slate-700/60 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-indigo-300 uppercase tracking-wider flex items-center space-x-1.5">
+              <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+              <span>Profil Anda</span>
+            </span>
+            <span id="profile-role-badge" class="text-[11px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Editor</span>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <input type="text" id="input-display-name" maxlength="24" placeholder="Masukkan nama Anda..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <button id="btn-save-profile" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-lg font-medium transition shrink-0 flex items-center space-x-1">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              <span>Simpan</span>
+            </button>
+          </div>
+
+          <div class="flex items-center space-x-2 pt-1">
+            <span class="text-[11px] text-slate-400">Warna Anda:</span>
+            <div id="profile-color-picker" class="flex items-center space-x-1.5">
+              <!-- Colors injected dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Daftar Pengguna Aktif & Izin -->
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span>Daftar Peserta Aktif</span>
+            </span>
+            <span id="active-users-count" class="text-xs text-slate-400">1 Online</span>
+          </div>
+
+          <div id="participants-list" class="space-y-2">
+            <!-- Injected participant items -->
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-950/50 border-t border-slate-800 flex justify-end">
+        <button id="btn-close-users-modal-bottom" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs px-4 py-2 rounded-lg transition">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PROMPT NAMA SAAT PERTAMA KALI MASUK -->
+  <div id="modal-welcome-name" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-indigo-500/40 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center space-y-4 animate-scale-in">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-500/50 text-indigo-400 flex items-center justify-center mx-auto">
+        <i data-lucide="user-plus" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-base text-white">Beri Nama Profil Anda</h3>
+        <p class="text-xs text-slate-400 mt-1">Masukkan nama agar rekan kolaborator di papan tulis dapat mengenali Anda.</p>
+      </div>
+      <form id="form-welcome-name" class="space-y-3">
+        <input type="text" id="input-welcome-name" maxlength="24" required placeholder="Nama Anda (contoh: Budi, Sarah...)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 text-center font-medium">
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/30">
+          Mulai Kolaborasi
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PILIHAN SISIPKAN PDF -->
+  <div id="modal-pdf-options" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden p-6 space-y-4 animate-scale-in">
+      <div class="flex items-center space-x-2 text-rose-400">
+        <i data-lucide="file-text" class="w-5 h-5"></i>
+        <h3 class="font-bold text-base text-white">Sisipkan Dokumen PDF</h3>
+      </div>
+      <p class="text-xs text-slate-400" id="pdf-doc-info">Dokumen memiliki beberapa halaman. Pilih halaman yang ingin disisipkan ke papan tulis.</p>
+
+      <div class="space-y-3 text-xs">
+        <label class="flex items-start space-x-2.5 p-3 rounded-xl border border-slate-700 bg-slate-800/40 cursor-pointer hover:border-indigo-500 transition">
+          <input type="radio" name="pdf-insert-mode" value="single" checked class="mt-0.5 text-indigo-600 focus:ring-0">
+          <div class="flex-1">
+            <span class="font-semibold text-slate-200 block">Halaman Tertentu Saja</span>
+            <div class="flex items-center space-x-2 mt-2">
+              <span class="text-slate-400">Halaman ke:</span>
+              <input type="number" id="input-pdf-page-num" min="1" value="1" class="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center text-white font-mono text-xs">
+              <span id="pdf-total-pages-label" class="text-slate-400">dari 1</span>
+            </div>
+          </div>
+        </label>
+
+        <label class="flex items-start space-x-2.5 p-3 rounded-xl border border-slate-700 bg-slate-800/40 cursor-pointer hover:border-indigo-500 transition">
+          <input type="radio" name="pdf-insert-mode" value="all" class="mt-0.5 text-indigo-600 focus:ring-0">
+          <div>
+            <span class="font-semibold text-slate-200 block">Semua Halaman</span>
+            <span class="text-slate-400 block mt-0.5">Sisipkan seluruh halaman dokumen secara berjajar</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="flex items-center justify-end space-x-2 pt-2">
+        <button id="btn-cancel-pdf" class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+          Batal
+        </button>
+        <button id="btn-confirm-pdf" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition shadow-md shadow-indigo-600/30">
+          Sisipkan Halaman
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KICKED NOTIFICATION -->
+  <div id="modal-kicked" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-red-500/50 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center space-y-4 animate-scale-in">
+      <div class="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center mx-auto">
+        <i data-lucide="user-x" class="w-7 h-7"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-lg text-white">Dikeluarkan dari Ruangan</h3>
+        <p id="kicked-message" class="text-xs text-slate-300 mt-2">Anda telah dikeluarkan dari papan tulis ini oleh Host/Editor.</p>
+      </div>
+      <div class="pt-2">
+        <a href="/" class="block w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/30">
+          Kembali ke Halaman Utama
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- APP SCRIPT -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
